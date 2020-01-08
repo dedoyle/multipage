@@ -1,0 +1,22 @@
+{
+	"presets": [
+    // 根、子目录的公共预设
+    [
+      "@babel/preset-env",
+      {
+        "useBuiltIns": "entry",
+        "corejs": 3,
+        "modules": false
+      }
+    ]
+  ],
+  "plugins": [
+    // 根、子目录的公共插件
+    [
+      "@babel/transform-runtime",
+      {
+        "corejs": 3
+      }
+    ]
+  ]
+}
