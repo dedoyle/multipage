@@ -6,3 +6,15 @@ body {
 div {
   margin: auto;
 }
+.wukong {
+  width: 200px;
+  height: 200px;
+  background: url(~@/assets/index/wukong19.jpg);
+}
+.star {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  background: url(~@/assets/index/icons/ic-star-16px.png);
+}

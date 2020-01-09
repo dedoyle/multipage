@@ -1,6 +1,10 @@
 # Webpack4 详细的配置笔记
 
 本文主要是多入口配置，希望能在无框架网页开发时提高开发效率，对代码进行打包优化。
+关键词：
+1. babel7 core-js@3
+2. 多入口
+3. sass
 
 ## 模块总览
 
@@ -260,7 +264,7 @@ module: {
 }
 ```
 
-js 解析规则
+1. js 解析规则
 
 build/webpack.rules.js
 
@@ -280,32 +284,30 @@ rules: [
 ```js
 {
 	"presets": [
-    // 根、子目录的公共预设
     [
       "@babel/preset-env",
       {
-        "useBuiltIns": "entry",
+        "useBuiltIns": "usage",
         "corejs": 3,
         "modules": false
-      }
-    ]
-  ],
-  "plugins": [
-    // 根、子目录的公共插件
-    [
-      "@babel/transform-runtime",
-      {
-        "corejs": 3
       }
     ]
   ]
 }
 ```
 
-1. 最新的建议直接使用 core-js 3，不再使用 @babel/polyfill 和 core-js 2。
-2. babelrc 的 plugins @babel/transform-runtime
+pages/index/index.js
 
-sass 解析规则
+```js
+import 'core-js/stable'
+import 'regenerator-runtime/runtime'
+```
+
+根据官网 Usage Guide 配置如上，这里采用的是 core-js@3 来实现 polyfill。因为 babel7 已经废弃 @babel/polyfill 和 core-js@2，不再更新。新的特性只会添加到 core-js@3，为了避免后续再改动，直接用 3。只是打出来的包大了点，这个自己平衡，如果觉得不爽，就还是用 @babel/polyfill。
+
+关于这个 core-js@3 [有篇文章](https://www.cnblogs.com/sefaultment/p/11631314.html)讲的挺清晰，可以参考。
+
+2. sass 解析规则
 
 ```js
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
@@ -330,3 +332,60 @@ rules: [
   }
 ]
 ```
+
+3. html
+
+build/webpack.base.js
+
+```js
+const htmlWebpackPlugin = require('html-webpack-plugin')
+
+plugins: [
+  ...getHtmlPlugins('./src/pages/**/index.html')
+]
+
+function getHtmlPlugins(globPath) {
+  var dirname, name
+  return glob.sync(globPath).reduce((acc, entry) => {
+    dirname = path.dirname(entry)
+    name = dirname.slice(dirname.lastIndexOf('/'))
+    acc.push(new htmlWebpackPlugin(getHtmlConfig(name, name)))
+    return acc
+  }, [])
+}
+
+function getHtmlConfig(name, chunks) {
+  return {
+    template: `./src/pages/${name}/index.html`,
+    filename: `${name}.html`,
+    // favicon: './favicon.ico',
+    // title: title,
+    inject: true,
+    chunks: chunks,
+    minify:
+      devMode
+        ? false
+        : {
+            removeComments: true,
+            collapseWhitespace: true
+          }
+  }
+}
+```
+
+4. 图片
+
+build/webpack.rules.js
+
+```js
+rules: []
+```
+
+devserver
+
+1. 打包后文件的内存路径 = devServer.contentBase + output.publicPath + output.filename，只能通过浏览器来访问这个路由来访问内存中的bundle
+
+对于publicPath，有两个用处：
+
+- 像以上的被webpack-dev-server作为在内存中的输出目录。
+- 被其他的loader插件所读取，修改url地址等。
