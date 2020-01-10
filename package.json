@@ -4,9 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "serve": "cross-env NODE_ENV=development webpack-dev-server  --config build/webpack.dev.js", 
+    "dev": "cross-env NODE_ENV=development webpack-dev-server  --config build/webpack.dev.js",
     "build": "cross-env NODE_ENV=production webpack --config build/webpack.prod.js",
-    "create": "node build/create.js"
+    "create": "node build/create.js",
+    "serve-dist": "live-server dist --port=80 -q --cors"
   },
   "dependencies": {
     "core-js": "^3.6.2",
@@ -31,6 +32,7 @@
     "imagemin-mozjpeg": "^8.0.0",
     "imagemin-pngquant": "^8.0.0",
     "img-loader": "^3.0.1",
+    "live-server": "^1.2.1",
     "mini-css-extract-plugin": "^0.9.0",
     "node-sass": "^4.13.0",
     "postcss": "^7.0.26",

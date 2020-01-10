@@ -11,16 +11,16 @@ const configDev = {
     // 包名称
     filename: 'js/[name].js'
   },
-  // devtool: 'cheap-eval-source-map',
+  devtool: 'cheap-eval-source-map',
   devServer: {
-    contentBase: utils.resolve('../src'),
-    publicPath: '/',
+    contentBase: utils.resolve('../src'), // 告诉服务器从哪个目录中提供内容
+    publicPath: '/', // 此路径下的打包文件可在浏览器中访问
     port: '8090',
     overlay: true, // 浏览器页面上显示错误
-    open: true, // 开启浏览器
+    open: true, // 自动打开浏览器
     // stats: "errors-only", //stats: "errors-only"表示只打印错误：
-    historyApiFallback: true, //不跳转
-    inline: true, //实时刷新
+    historyApiFallback: true, // 404 会被替代为 index.html
+    inline: true, // 内联模式，实时刷新
     hot: true, // 开启热更新
     proxy: {
       '/api': {

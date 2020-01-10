@@ -2,9 +2,12 @@
 
 本文主要是多入口配置，希望能在无框架网页开发时提高开发效率，对代码进行打包优化。
 关键词：
-1. babel7 core-js@3
+1. babel7
 2. 多入口
 3. sass
+4. 图片处理
+5. 音视频处理
+6. 字体处理
 
 ## 模块总览
 
@@ -12,6 +15,11 @@
 
 ```
 |-build
+  |-create.js
+  |-utils.js
+  |-webpack.base.js
+  |-webpack.dev.js
+  |-webpack.prod.js
 |-dist
 |-src
 |-.babelrc
@@ -19,73 +27,60 @@
 |-package.json
 ```
 
-build/webpack.base.js
-
 ```js
-const path = require('path')
+// webpack.base.js
 const webpack = require('webpack')
-const glob = require('glob')
+const path = require('path')
+
 const rules = require('./webpack.rules.js')
+const utils = require('./utils.js')
 
 module.exports = {
-  let config = {
-    mode: '',
-    entry: {},
-    module: {},
-    resolve: {},
-    externals: {},
-    plugins: []
-  }
-  return config
+  entry: {},
+  resolve: {},
+  module: {},
+  externals: {},
+  plugins: []
 }
 
-/**
- * 返回文件的绝对路径
- * @param {string} dir 文件路径
- * __dirname 获得当前执行文件所在目录的完整目录名（这里指的是 build 目录）
- */
-function resolve(dir) {
-  return path.resolve(__dirname, dir)
-}
-```
-
-build/webpack.prod.js
-
-```js
+// webpack.prod.js
 const webpack = require('webpack')
 const merge = require('webpack-merge')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 
 const devMode = process.env.NODE_ENV !== 'production'
 const configBase = require('./webpack.base.js')
+const utils = require('./utils.js')
 
 const configProd = {
   mode: 'production',
   devtool: 'none',
+  output: {},
   optimization: {},
   plugins: []
 }
 module.exports = merge(configBase, configProd)
 
-```
-
-build/webpack.dev.js
-
-```js
+// webpack.dev.js
 const webpack = require('webpack')
 const merge = require('webpack-merge')
-const devMode = process.env.NODE_ENV !== 'production'
+
+const utils = require('./utils.js')
 const configBase = require('./webpack.base.js')
 
 const configDev = {
   mode: 'development'
-  plugins: []
+  output: {},
+  devServer: {},
+  plugins: [],
+  module: {}
 }
-module.exports = merge(configBase, configProd)
-```
+module.exports = merge(configBase, configDev)
 
-build/webpack.rules.js
-
-```js
+// webpack.rules.js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const devMode = process.env.NODE_ENV !== 'production'
 const rules = []
 module.exports = rules
@@ -114,9 +109,25 @@ entry: {
 对于多入口配置，可以用 glob 库来动态获取入口文件，如下：
 
 ```js
+// utils.js
+const path = require('path')
+const htmlWebpackPlugin = require('html-webpack-plugin')
+const glob = require('glob') // 遍历目录
+const devMode = process.env.NODE_ENV !== 'production'
+
+/**
+ * 返回文件的绝对路径
+ * @param {string} dir 文件路径
+ * __dirname 获得当前执行文件所在目录的完整目录名（这里指的是 build 目录）
+ */
+function resolve(dir) {
+  return path.resolve(__dirname, dir)
+}
+
+//动态添加入口
 function getEntry(globPath) {
-  let dirname, name
-  return glob.sync(globPath).reduce(function(acc, entry) {
+  var dirname, name
+  return glob.sync(globPath).reduce((acc, entry) => {
     // name  ./src/pages/index/index.js
     // dirname  ./src/pages/index
     // basename  index.js
@@ -127,16 +138,24 @@ function getEntry(globPath) {
   }, {})
 }
 
-entry: getEntry('./src/pages/**/index.js'),
+function getHtmlPlugins() {}
+
+module.exports = {
+  resolve,
+  getEntry,
+  getHtmlPlugins
+}
+
+// webpack.base.js
+entry: utils.getEntry('./src/pages/**/index.js'),
 ```
 
 ## 配置 clean-webpack-plugin
 
 在配置 output 之前配置这个插件是为，每次打包前可以删除 dist 目录，保证没有冗余文件。
 
-build/webpack.prod.js
-
 ```js
+// webpack.prod.js
 const cleanWebpackPlugin = require('clean-webpack-plugin')
 
 plugins: [
@@ -155,24 +174,26 @@ plugins: [
 
 自定义输出文件的位置和名称
 
-build/webpack.base.js
-
 ```js
+// webpack.dev.js
 output: {
-  path: resolve('../dist'),
+  path: utils.resolve('../dist'),
   // 包名称
-  filename: '[name].[chunkhash:8].js',
-  // 或使用函数返回名（不常用）
-  // filename: (chunkData) => {
-  //   return chunkData.chunk.name === 'main' ? '[name].js': '[name]/[name].js';
-  // },
+  filename: 'js/[name].js'
+},
+
+// webpack.prod.js
+output: {
+  path: utils.resolve('../dist'),
+  // 包名称
+  filename: 'js/[name].[chunkhash:8].js',
   // 块名，公共块名（非入口）
-  chunkFilename: '[name].[chunkhash:8].js',
+  chunkFilename: 'js/[name].[chunkhash:8].js',
   // 打包生成的 index.html 文件里面引用资源的前缀
   // 也为发布到线上资源的 URL 前缀
   // 使用的是相对路径，默认为 ''
-  publicPath: './'
-}
+  publicPath: '.'
+},
 ```
 
 ### hash
@@ -193,45 +214,15 @@ output: {
 
 关于这三者的区别，网上也有相关文章，例如我查到的一篇 [《webpack 中的 hash、chunkhash、contenthash 区别》](https://juejin.im/post/5a4502be6fb9a0450d1162ed) 可以参考。
 
-### 打包成库
-
-构建一个可以被其它模块引用的库，如下：
-
-build/webpack.base.js
-
-```js
-output: {
-  // path 必须为绝对路径
-  // 输出文件路径
-  path: path.resolve(__dirname, '../../dist/build'),
-  // 包名称
-  filename: '[name].[chunkhash:8].js',
-  // 块名，公共块名（非入口）
-  chunkFilename: '[name].[chunkhash:8].js',
-  // 打包生成的 index.html 文件里面引用资源的前缀
-  // 也为发布到线上资源的 URL 前缀
-  // 使用的是相对路径，默认为 ''
-  publicPath: '/',
-  // 一旦设置后该 bundle 将被处理为 library
-  library: 'libraryName',
-  // export 的 library 的规范，有支持 var, this, commonjs,commonjs2,amd,umd
-  libraryTarget: 'umd',
-}
-```
-
 ## 配置模式 mode
 
-build/webpack.prod.js
+none、development、production，默认为 production
 
 ```js
-// none、development、production
-// 默认为 production
+// webpack.prod.js
 mode: 'production'
-```
 
-build/webpack.dev.js
-
-```js
+// webpack.dev.js
 mode: 'development'
 ```
 
@@ -239,13 +230,13 @@ webpack4 针对不同模式，调用内置的优化策略，可以减少很多�
 
 ## 配置解析策略 resolve
 
-build/webpack.base.js
-
 ```js
+// webpack.base.js
 resolve: {
   // import 导入时别名，减少耗时的递归解析操作
   alias: {
-    '@': resolve('../src')
+    '@': resolve('../src'),
+    'assets': utils.resolve('../src/assets')
   }
 }
 ```
@@ -254,9 +245,8 @@ resolve: {
 
 给项目中不同的文件类型，配置相应的规则
 
-build/webpack.base.js
-
 ```js
+// webpack.base.js
 module: {
   // 忽略大型的 library 可以提高构建性能
   noParse: /jquery|lodash/,
@@ -266,9 +256,8 @@ module: {
 
 1. js 解析规则
 
-build/webpack.rules.js
-
 ```js
+// webpack.rules.js
 rules: [
   {
     test: /\.js$/,
@@ -277,11 +266,8 @@ rules: [
     exclude: '/node_modules/'
   }
 ]
-```
 
-.babelrc
-
-```js
+// .babelrc
 {
 	"presets": [
     [
@@ -294,23 +280,20 @@ rules: [
     ]
   ]
 }
-```
 
-pages/index/index.js
-
-```js
+// pages/index/index.js
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
 ```
 
 根据官网 Usage Guide 配置如上，这里采用的是 core-js@3 来实现 polyfill。因为 babel7 已经废弃 @babel/polyfill 和 core-js@2，不再更新。新的特性只会添加到 core-js@3，为了避免后续再改动，直接用 3。只是打出来的包大了点，这个自己平衡，如果觉得不爽，就还是用 @babel/polyfill。
 
-关于这个 core-js@3 [有篇文章](https://www.cnblogs.com/sefaultment/p/11631314.html)讲的挺清晰，可以参考。
+关于这个 core-js@3 [有篇文章](https://www.cnblogs.com/sefaultment/p/11631314.html) 讲的挺清晰，可以参考。
 
 2. sass 解析规则
 
 ```js
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+// webpack.rules.js
 rules: [
   {
     test: /\.s[ac]ss$/i,
@@ -329,26 +312,32 @@ rules: [
       'postcss-loader',
       'sass-loader'
     ]
-  }
+  },
+]
+
+// webpack.prod.js
+plugins: [
+  new MiniCssExtractPlugin({
+    filename: 'css/[name].[contenthash:5].css',
+    chunkFilename: 'css/[id].[contenthash:5].css'
+  }),
 ]
 ```
 
 3. html
 
-build/webpack.base.js
-
 ```js
-const htmlWebpackPlugin = require('html-webpack-plugin')
-
+// webpack.base.js
 plugins: [
-  ...getHtmlPlugins('./src/pages/**/index.html')
+  ...utils.getHtmlPlugins('./src/pages/**/index.html')
 ]
 
+// utils.js
 function getHtmlPlugins(globPath) {
   var dirname, name
   return glob.sync(globPath).reduce((acc, entry) => {
     dirname = path.dirname(entry)
-    name = dirname.slice(dirname.lastIndexOf('/'))
+    name = dirname.slice(dirname.lastIndexOf('/') + 1)
     acc.push(new htmlWebpackPlugin(getHtmlConfig(name, name)))
     return acc
   }, [])
@@ -361,7 +350,7 @@ function getHtmlConfig(name, chunks) {
     // favicon: './favicon.ico',
     // title: title,
     inject: true,
-    chunks: chunks,
+    chunks: [chunks],
     minify:
       devMode
         ? false
@@ -375,17 +364,157 @@ function getHtmlConfig(name, chunks) {
 
 4. 图片
 
-build/webpack.rules.js
-
 ```js
-rules: []
+// webpack.rules.js
+rules: [
+  {
+    test: /\.(html|htm)$/,
+    loader: 'html-loader'
+  },
+  {
+    test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+    use: [
+      {
+        loader: 'url-loader',
+        options: {
+          esModule: false, // 处理 html 图片
+          limit: 5 * 1024,
+          name: '[name].[hash:8].[ext]',
+          outputPath: 'img'
+        }
+      },
+      {
+        loader: 'img-loader',
+        options: {
+          plugins: [
+            require('imagemin-pngquant')({
+              speed: 2 // 1-11
+            }),
+            require('imagemin-mozjpeg')({
+              quality: 80 // 1-100
+            }),
+            require('imagemin-gifsicle')({
+              optimizationLevel: 1 // 1,2,3
+            })
+          ]
+        }
+      }
+    ]
+  }
+]
 ```
 
-devserver
+用法：
 
-1. 打包后文件的内存路径 = devServer.contentBase + output.publicPath + output.filename，只能通过浏览器来访问这个路由来访问内存中的bundle
+```css
+background: url(~assets/index/icons/ic-star-16px.png);
+```
 
-对于publicPath，有两个用处：
+```js
+import wukong from 'assets/index/wukong.jpg'
+```
 
-- 像以上的被webpack-dev-server作为在内存中的输出目录。
-- 被其他的loader插件所读取，修改url地址等。
+```html
+<img src="~assets/index/wukong.jpg" alt="wukong">
+```
+
+这里有有几个点要注意：
+
+- url-loader 和 file-loader
+  如果配置了 limit，那么小于这个 limit 值的图片会被 url-loader 转换成 base64，超过的图片直接用 file-loader 处理。所以虽然规则里没出现 file-loader，但还是要安装。
+- html-loader
+  用于处理 html 文件，这里主要是处理 html 文件里的图片。图片会通过 url-loader 处理，处理完再给图片 src 设置正确的路径或 base64。而 html 中要使用 webpack 的 alias 配置，需要在前面加上 ~，然后 url-loader 要配置 `esModule: false` 才不会出错。
+
+5. 音视频和字体
+
+```js
+// webpack.rules.js
+rules: [
+  {
+    test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
+    loader: 'url-loader',
+    options: {
+      limit: 10000,
+      name: '[name].[hash:8].[ext]',
+      outputPath: 'media'
+    }
+  },
+  {
+    test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
+    loader: 'url-loader',
+    options: {
+      limit: 10000,
+      name: '[name].[hash:8].[ext]',
+      outputPath: 'font'
+    }
+  }
+]
+```
+
+## devserver
+
+```js
+// webpack.dev.js
+devServer: {
+  contentBase: utils.resolve('../src'), // 告诉服务器从哪个目录中提供内容
+  publicPath: '/', // 此路径下的打包文件可在浏览器中访问
+  port: '8090',
+  overlay: true, // 浏览器页面上显示错误
+  open: true, // 自动打开浏览器
+  // stats: "errors-only", //stats: "errors-only"表示只打印错误：
+  historyApiFallback: true, // 404 会被替代为 index.html
+  inline: true, // 内联模式，实时刷新
+  hot: true, // 开启热更新
+  proxy: {
+    '/api': {
+      target: 'https://platform.dev.dtedu.com/',
+      changeOrigin: true,
+      pathRewrite: {}
+    }
+  }
+},
+plugins: [
+  //热更新
+  new webpack.HotModuleReplacementPlugin()
+],
+```
+
+1. 打包后文件的内存路径 = devServer.contentBase + output.publicPath + output.filename，只能通过浏览器来访问这个路由来访问内存中的 bundle
+2. 对于 publicPath，有两个用处：
+- 像以上的被 webpack-dev-server 作为在内存中的输出目录。
+- 被其他的 loader 插件所读取，修改 url 地址等。
+
+## devtool
+
+```js
+// webpack.dev.js
+devtool: 'cheap-eval-source-map',
+
+// webpack.prod.js
+devtool: 'none',
+```
+
+此选项控制是否生成，以及如何生成 source map。不同选项之间，[官网](https://webpack.docschina.org/configuration/devtool/) 有更详细解释和对比。
+
+## optimization
+
+```js
+// webpack.prod.js
+optimization: {
+  runtimeChunk: {
+    name: 'manifest'
+  },
+  splitChunks: {
+    cacheGroups: {
+      chunks: 'initial', // 只对入口文件处理
+      vendors: {
+        test: /[\\/]node_modules[\\/]/,
+        name: 'vendors',
+        chunks: 'all'
+      }
+    }
+  }
+},
+```
+
+runtimeChunk 和 splitChunks 主要优化的点在于浏览器缓存，如果不考虑，也可以不加这个配置。

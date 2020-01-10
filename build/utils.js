@@ -37,7 +37,6 @@ function getHtmlPlugins(globPath) {
 }
 
 function getHtmlConfig(name, chunks) {
-  console.log(chunks)
   return {
     template: `./src/pages/${name}/index.html`,
     filename: `${name}.html`,

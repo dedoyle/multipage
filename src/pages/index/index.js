@@ -1,12 +1,11 @@
 import 'core-js/stable'
 import 'regenerator-runtime/runtime'
-
 import './index.scss'
 
-console.log('home')
+const app = () => import('@/common/js/common.js')
 
 new Promise(resolve => {
   setTimeout(() => {
-    resolve(1)
+    resolve(2)
   }, 500)
 })

@@ -20,23 +20,22 @@ const configProd = {
     // 打包生成的 index.html 文件里面引用资源的前缀
     // 也为发布到线上资源的 URL 前缀
     // 使用的是相对路径，默认为 ''
-    publicPath: '.'
+    publicPath: './'
   },
   optimization: {
-    // usedExports: true,
-    // runtimeChunk: {
-    //     name: 'manifest'
-    // },
-    // splitChunks: {
-    //   cacheGroups: {
-    //     chunks: 'initial', // 只对入口文件处理
-    //     vendors: {
-    //       test: /[\\/]node_modules[\\/]/,
-    //       name: 'vendors',
-    //       chunks: 'all'
-    //     }
-    //   }
-    // }
+    runtimeChunk: {
+      name: 'manifest'
+    },
+    splitChunks: {
+      cacheGroups: {
+        chunks: 'initial', // 只对入口文件处理
+        vendors: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all'
+        }
+      }
+    }
   },
   plugins: [
     // 删除 dist 目录
@@ -50,7 +49,7 @@ const configProd = {
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash:5].css',
       chunkFilename: 'css/[id].[contenthash:5].css'
-    }),
+    })
     //静态资源输出
     // new CopyPlugin([
     //   {

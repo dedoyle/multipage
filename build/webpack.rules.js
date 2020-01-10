@@ -27,10 +27,7 @@ const rules = [
   },
   {
     test: /\.(html|htm)$/,
-    loader: 'html-loader',
-    options: {
-      attrs: [':data-src']
-    }
+    loader: 'html-loader'
   },
   {
     test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
@@ -38,9 +35,10 @@ const rules = [
       {
         loader: 'url-loader',
         options: {
+          esModule: false,
           limit: 5 * 1024,
-          name: '[name].[hash:7].[ext]',
-          outputPath: 'home/img'
+          name: '[name].[hash:8].[ext]',
+          outputPath: 'img'
         }
       },
       {
@@ -66,7 +64,7 @@ const rules = [
     loader: 'url-loader',
     options: {
       limit: 10000,
-      name: '[name].[hash:7].[ext]',
+      name: '[name].[hash:8].[ext]',
       outputPath: 'media'
     }
   },
@@ -75,7 +73,7 @@ const rules = [
     loader: 'url-loader',
     options: {
       limit: 10000,
-      name: '[name].[hash:7].[ext]',
+      name: '[name].[hash:8].[ext]',
       outputPath: 'font'
     }
   }

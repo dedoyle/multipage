@@ -10,7 +10,8 @@ module.exports = {
   resolve: {
     // import 导入时别名，减少耗时的递归解析操作
     alias: {
-      '@': utils.resolve('../src')
+      '@': utils.resolve('../src'),
+      'assets': utils.resolve('../src/assets')
     }
   },
   module: {
