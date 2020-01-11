@@ -24,7 +24,7 @@ const configDev = {
     hot: true, // 开启热更新
     proxy: {
       '/api': {
-        target: 'https://platform.dev.dtedu.com/',
+        target: 'https://example.com/',
         changeOrigin: true,
         pathRewrite: {}
       }

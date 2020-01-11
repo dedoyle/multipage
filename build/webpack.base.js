@@ -38,6 +38,6 @@ module.exports = {
     new PurgecssPlugin({
       paths: utils.getPurecssPath('../src'),
     }),
-    ...utils.htmlPlugins('./src/pages/**/index.html')
+    ...utils.htmlPlugins('./src/pages/*/index.html')
   ]
 }

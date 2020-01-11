@@ -34,7 +34,7 @@
 ```js
 // webpack.base.js
 const webpack = require('webpack')
-const path = require('path')
+const PurgecssPlugin = require('purgecss-webpack-plugin')
 
 const rules = require('./webpack.rules.js')
 const utils = require('./utils.js')
@@ -52,9 +52,8 @@ const webpack = require('webpack')
 const merge = require('webpack-merge')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const CopyPlugin = require('copy-webpack-plugin')
+const CompressionPlugin = require('compression-webpack-plugin')
 
-const devMode = process.env.NODE_ENV !== 'production'
 const configBase = require('./webpack.base.js')
 const utils = require('./utils.js')
 
@@ -151,7 +150,7 @@ module.exports = {
 }
 
 // webpack.base.js
-entry: utils.getEntry('./src/pages/**/index.js'),
+entry: utils.getEntry('./src/pages/*/index.js'),
 ```
 
 ## 配置 clean-webpack-plugin
@@ -164,13 +163,13 @@ const cleanWebpackPlugin = require('clean-webpack-plugin')
 
 plugins: [
   // 删除 dist 目录
-  new cleanWebpackPlugin({
+  new CleanWebpackPlugin({
     // verbose Write logs to console.
     verbose: false, //开启在控制台输出信息
     // dry Use boolean "true" to test/emulate delete. (will not remove files).
     // Default: false - remove files
     dry: false
-  })
+  }),
 ]
 ```
 
@@ -241,7 +240,11 @@ resolve: {
   alias: {
     '@': resolve('../src'),
     'assets': utils.resolve('../src/assets')
-  }
+  },
+  extensions: [
+    '.js',
+    '.json'
+  ]
 }
 ```
 
@@ -322,9 +325,9 @@ rules: [
 // webpack.prod.js
 plugins: [
   new MiniCssExtractPlugin({
-    filename: 'css/[name].[contenthash:5].css',
-    chunkFilename: 'css/[id].[contenthash:5].css'
-  })
+    filename: 'css/[name].[contenthash:8].css',
+    chunkFilename: 'css/[name].[contenthash:8].css'
+  }),
 ]
 ```
 
@@ -332,7 +335,7 @@ plugins: [
 
 ```js
 // webpack.base.js
-plugins: [...utils.htmlPlugins('./src/pages/**/index.html')]
+plugins: [...utils.htmlPlugins('./src/pages/*/index.html')]
 
 // utils.js
 function htmlPlugins(globPath) {
@@ -369,19 +372,14 @@ function htmlConfig(name, chunks) {
 // webpack.rules.js
 rules: [
   {
-    test: /\.(html|htm)$/,
-    loader: 'html-loader'
-  },
-  {
-    test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+    test: /\.(png|jpe?g|gif)(\?.*)?$/,
     use: [
       {
         loader: 'url-loader',
         options: {
-          esModule: false, // 处理 html 图片
-          limit: 5 * 1024,
-          name: '[name].[hash:8].[ext]',
-          outputPath: 'img'
+          esModule: false,
+          limit: 4 * 1024,
+          name: 'img/[name].[hash:8].[ext]'
         }
       },
       {
@@ -401,13 +399,24 @@ rules: [
         }
       }
     ]
-  }
+  },
+  {
+    test: /\.(svg)(\?.*)?$/,
+    use: [
+      {
+        loader: 'url-loader',
+        options: {
+          name: 'img/[name].[hash:8].[ext]'
+        }
+      }
+    ]
+  },
 ]
 ```
 
 用法：
 
-```css
+```scss
 background: url(~assets/index/icons/ic-star-16px.png);
 ```
 
@@ -435,7 +444,7 @@ rules: [
     test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
     loader: 'url-loader',
     options: {
-      limit: 10000,
+      limit: 4 * 1024,
       name: '[name].[hash:8].[ext]',
       outputPath: 'media'
     }
@@ -444,7 +453,7 @@ rules: [
     test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
     loader: 'url-loader',
     options: {
-      limit: 10000,
+      limit: 4 * 1024,
       name: '[name].[hash:8].[ext]',
       outputPath: 'font'
     }
@@ -463,12 +472,12 @@ devServer: {
   overlay: true, // 浏览器页面上显示错误
   open: true, // 自动打开浏览器
   // stats: "errors-only", //stats: "errors-only"表示只打印错误：
-  historyApiFallback: true, // 404 会被替代为 index.html
+  historyApiFallback: false, // 404 会被替代为 index.html
   inline: true, // 内联模式，实时刷新
   hot: true, // 开启热更新
   proxy: {
     '/api': {
-      target: 'https://platform.dev.dtedu.com/',
+      target: 'https://example.com/',
       changeOrigin: true,
       pathRewrite: {}
     }
@@ -508,11 +517,18 @@ optimization: {
   },
   splitChunks: {
     cacheGroups: {
-      chunks: 'initial', // 只对入口文件处理
       vendors: {
-        test: /[\\/]node_modules[\\/]/,
         name: 'vendors',
-        chunks: 'all'
+        test: /[\\\/]node_modules[\\\/]/,
+        priority: -10,
+        chunks: 'initial' // 只对入口文件处理
+      },
+      vendors: {
+        name: 'chunk-common',
+        minChunks: 2,
+        priority: -20,
+        chunks: 'initial',
+        reuseExistingChunk: true
       }
     }
   }
