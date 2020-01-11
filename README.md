@@ -1,13 +1,17 @@
-# Webpack4 详细的配置笔记
+# 详细的 webpack4 多入口配置
 
-本文主要是多入口配置，希望能在无框架网页开发时提高开发效率，对代码进行打包优化。
-关键词：
+本文主要是多入口配置，希望能在无框架开发网页时提高开发效率，对代码进行打包优化。本文有什么需要改善的地方，还望各位多多指教。
+
+本文关键词：
 1. babel7
 2. 多入口
 3. sass
 4. 图片处理
 5. 音视频处理
 6. 字体处理
+7. gzip
+
+<a href="https://github.com/dedoyle/multipage" target="_blank">github 源码</a>
 
 ## 模块总览
 
@@ -138,12 +142,12 @@ function getEntry(globPath) {
   }, {})
 }
 
-function getHtmlPlugins() {}
+function htmlPlugins() {}
 
 module.exports = {
   resolve,
   getEntry,
-  getHtmlPlugins
+  htmlPlugins
 }
 
 // webpack.base.js
@@ -212,7 +216,7 @@ output: {
 
 根据包内容计算出哈希值，只要包内容不变，哈希值不变。适用于生产环境。
 
-关于这三者的区别，网上也有相关文章，例如我查到的一篇 [《webpack 中的 hash、chunkhash、contenthash 区别》](https://juejin.im/post/5a4502be6fb9a0450d1162ed) 可以参考。
+关于这三者的区别，网上也有相关文章，例如我查到的一篇 <a href="https://juejin.im/post/5a4502be6fb9a0450d1162ed" target="_blank">《webpack 中的 hash、chunkhash、contenthash 区别》</a> 可以参考。
 
 ## 配置模式 mode
 
@@ -226,7 +230,7 @@ mode: 'production'
 mode: 'development'
 ```
 
-webpack4 针对不同模式，调用内置的优化策略，可以减少很多配置。参考 [webpack 模式](https://webpack.docschina.org/concepts/mode/)
+webpack4 针对不同模式，调用内置的优化策略，可以减少很多配置。参考 <a href="https://webpack.docschina.org/concepts/mode/" target="_blank">webpack 模式</a>
 
 ## 配置解析策略 resolve
 
@@ -288,7 +292,7 @@ import 'regenerator-runtime/runtime'
 
 根据官网 Usage Guide 配置如上，这里采用的是 core-js@3 来实现 polyfill。因为 babel7 已经废弃 @babel/polyfill 和 core-js@2，不再更新。新的特性只会添加到 core-js@3，为了避免后续再改动，直接用 3。只是打出来的包大了点，这个自己平衡，如果觉得不爽，就还是用 @babel/polyfill。
 
-关于这个 core-js@3 [有篇文章](https://www.cnblogs.com/sefaultment/p/11631314.html) 讲的挺清晰，可以参考。
+关于这个 core-js@3 <a href="https://www.cnblogs.com/sefaultment/p/11631314.html" target="_blank">有篇文章</a> 讲的挺清晰，可以参考。
 
 2. sass 解析规则
 
@@ -312,7 +316,7 @@ rules: [
       'postcss-loader',
       'sass-loader'
     ]
-  },
+  }
 ]
 
 // webpack.prod.js
@@ -320,7 +324,7 @@ plugins: [
   new MiniCssExtractPlugin({
     filename: 'css/[name].[contenthash:5].css',
     chunkFilename: 'css/[id].[contenthash:5].css'
-  }),
+  })
 ]
 ```
 
@@ -328,22 +332,20 @@ plugins: [
 
 ```js
 // webpack.base.js
-plugins: [
-  ...utils.getHtmlPlugins('./src/pages/**/index.html')
-]
+plugins: [...utils.htmlPlugins('./src/pages/**/index.html')]
 
 // utils.js
-function getHtmlPlugins(globPath) {
+function htmlPlugins(globPath) {
   var dirname, name
   return glob.sync(globPath).reduce((acc, entry) => {
     dirname = path.dirname(entry)
     name = dirname.slice(dirname.lastIndexOf('/') + 1)
-    acc.push(new htmlWebpackPlugin(getHtmlConfig(name, name)))
+    acc.push(new htmlWebpackPlugin(htmlConfig(name, name)))
     return acc
   }, [])
 }
 
-function getHtmlConfig(name, chunks) {
+function htmlConfig(name, chunks) {
   return {
     template: `./src/pages/${name}/index.html`,
     filename: `${name}.html`,
@@ -351,13 +353,12 @@ function getHtmlConfig(name, chunks) {
     // title: title,
     inject: true,
     chunks: [chunks],
-    minify:
-      devMode
-        ? false
-        : {
-            removeComments: true,
-            collapseWhitespace: true
-          }
+    minify: devMode
+      ? false
+      : {
+          removeComments: true,
+          collapseWhitespace: true
+        }
   }
 }
 ```
@@ -415,7 +416,7 @@ import wukong from 'assets/index/wukong.jpg'
 ```
 
 ```html
-<img src="~assets/index/wukong.jpg" alt="wukong">
+<img src="~assets/index/wukong.jpg" alt="wukong" />
 ```
 
 这里有有几个点要注意：
@@ -481,6 +482,7 @@ plugins: [
 
 1. 打包后文件的内存路径 = devServer.contentBase + output.publicPath + output.filename，只能通过浏览器来访问这个路由来访问内存中的 bundle
 2. 对于 publicPath，有两个用处：
+
 - 像以上的被 webpack-dev-server 作为在内存中的输出目录。
 - 被其他的 loader 插件所读取，修改 url 地址等。
 
@@ -494,7 +496,7 @@ devtool: 'cheap-eval-source-map',
 devtool: 'none',
 ```
 
-此选项控制是否生成，以及如何生成 source map。不同选项之间，[官网](https://webpack.docschina.org/configuration/devtool/) 有更详细解释和对比。
+此选项控制是否生成，以及如何生成 source map。不同选项之间，<a href="https://webpack.docschina.org/configuration/devtool/" target="_blank">官网</a> 有更详细解释和对比。
 
 ## optimization
 
@@ -518,3 +520,48 @@ optimization: {
 ```
 
 runtimeChunk 和 splitChunks 主要优化的点在于浏览器缓存，如果不考虑，也可以不加这个配置。
+
+## externals
+
+```js
+// webpack.base.js
+externals: {
+  'jquery': 'window.jquery'
+},
+```
+
+作用：防止将某些 import 的包 (package) 打包到 bundle 中，而是在运行时 (runtime) 再去从外部获取这些扩展依赖。
+没加 externals 配置，jq 通过 cdn 加载，直接在本地使用 `$('#id')` 打包没什么问题。但是，如果你在本地使用了模块化的 jq 插件，就加上面这个 externals 配置了。原因如下：
+
+```js
+;(function(window, factory) {
+  if (typeof exports === 'object') {
+    module.exports = factory(require('jQuery'))
+  } else if (typeof define === 'function' && define.amd) {
+    define(['jQuery'], factory)
+  } else {
+    factory()
+  }
+})(window, function($) {
+  $.fn.green = function() {
+    $(this).each(function() {
+      $(this).css('color', 'green')
+    })
+  }
+})
+```
+
+上面的代码是一个简单 jq 插件，采用了 UMD 模块化方案。`if (typeof exports === 'object')` 这行代码会被 webpack 解析为 `if (true)`，也就是说，webpack 编译后的代码，会执行 `require('jquery')`，而本地并没有安装 jq，所以会报错，无法打包成功。
+
+## ProvidePlugin
+
+```js
+plugins: [
+  // 自动加载模块，无需 import 或 require
+  new webpack.ProvidePlugin({
+    $: 'jquery',
+    jQuery: 'jquery',
+    'window.jQuery': 'jquery'
+  }),
+]
+```

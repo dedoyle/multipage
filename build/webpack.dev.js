@@ -19,7 +19,7 @@ const configDev = {
     overlay: true, // 浏览器页面上显示错误
     open: true, // 自动打开浏览器
     // stats: "errors-only", //stats: "errors-only"表示只打印错误：
-    historyApiFallback: true, // 404 会被替代为 index.html
+    historyApiFallback: false, // 404 会被替代为 index.html
     inline: true, // 内联模式，实时刷新
     hot: true, // 开启热更新
     proxy: {

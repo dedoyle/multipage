@@ -1,6 +1,6 @@
 const path = require('path')
-const htmlWebpackPlugin = require('html-webpack-plugin')
 const glob = require('glob') // 遍历目录
+const htmlWebpackPlugin = require('html-webpack-plugin')
 const devMode = process.env.NODE_ENV !== 'production'
 
 /**
@@ -26,17 +26,17 @@ function getEntry(globPath) {
   }, {})
 }
 
-function getHtmlPlugins(globPath) {
+function htmlPlugins(globPath) {
   var dirname, name
   return glob.sync(globPath).reduce((acc, entry) => {
     dirname = path.dirname(entry)
     name = dirname.slice(dirname.lastIndexOf('/') + 1)
-    acc.push(new htmlWebpackPlugin(getHtmlConfig(name, name)))
+    acc.push(new htmlWebpackPlugin(htmlConfig(name, name)))
     return acc
   }, [])
 }
 
-function getHtmlConfig(name, chunks) {
+function htmlConfig(name, chunks) {
   return {
     template: `./src/pages/${name}/index.html`,
     filename: `${name}.html`,
@@ -54,8 +54,13 @@ function getHtmlConfig(name, chunks) {
   }
 }
 
+function getPurecssPath(globPath) {
+  return glob.sync(`${resolve(globPath)}/**/*`,  { nodir: true })
+}
+
 module.exports = {
   resolve,
   getEntry,
-  getHtmlPlugins
+  htmlPlugins,
+  getPurecssPath
 }

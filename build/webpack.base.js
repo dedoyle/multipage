@@ -1,5 +1,5 @@
 const webpack = require('webpack')
-const path = require('path')
+const PurgecssPlugin = require('purgecss-webpack-plugin')
 
 const rules = require('./webpack.rules.js')
 const utils = require('./utils.js')
@@ -12,7 +12,11 @@ module.exports = {
     alias: {
       '@': utils.resolve('../src'),
       'assets': utils.resolve('../src/assets')
-    }
+    },
+    extensions: [
+      '.js',
+      '.json'
+    ]
   },
   module: {
     // 忽略大型的 library 可以提高构建性能
@@ -20,15 +24,20 @@ module.exports = {
     rules: rules
   },
   externals: {
-    // 'jquery': 'window.jquery'
+    // 防止将某些 import 的包 (package) 打包到 bundle 中，
+    // 而是在运行时 (runtime) 再去从外部获取这些扩展依赖
+    'jquery': 'window.jquery'
   },
   plugins: [
-    // 全局暴露统一入口
-    // new webpack.ProvidePlugin({
-    //   $: 'jquery',
-    //   jQuery: 'jquery',
-    //   'window.jQuery': 'jquery'
-    // }),
-    ...utils.getHtmlPlugins('./src/pages/**/index.html')
+    // 自动加载模块，无需 import 或 require
+    new webpack.ProvidePlugin({
+      $: 'jquery',
+      jQuery: 'jquery',
+      'window.jQuery': 'jquery'
+    }),
+    new PurgecssPlugin({
+      paths: utils.getPurecssPath('../src'),
+    }),
+    ...utils.htmlPlugins('./src/pages/**/index.html')
   ]
 }

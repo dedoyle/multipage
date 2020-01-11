@@ -4,8 +4,7 @@ const rules = [
   {
     test: /\.js$/,
     use: ['babel-loader'],
-    // 不检查node_modules下的js文件
-    exclude: '/node_modules/'
+    exclude: '/node_modules/' // 不检查 node_modules 下的 js 文件
   },
   {
     test: /\.s[ac]ss$/i,
@@ -30,15 +29,14 @@ const rules = [
     loader: 'html-loader'
   },
   {
-    test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,
+    test: /\.(png|jpe?g|gif)(\?.*)?$/,
     use: [
       {
         loader: 'url-loader',
         options: {
           esModule: false,
-          limit: 5 * 1024,
-          name: '[name].[hash:8].[ext]',
-          outputPath: 'img'
+          limit: 4 * 1024,
+          name: 'img/[name].[hash:8].[ext]'
         }
       },
       {
@@ -60,10 +58,21 @@ const rules = [
     ]
   },
   {
+    test: /\.(svg)(\?.*)?$/,
+    use: [
+      {
+        loader: 'url-loader',
+        options: {
+          name: 'img/[name].[hash:8].[ext]'
+        }
+      }
+    ]
+  },
+  {
     test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
     loader: 'url-loader',
     options: {
-      limit: 10000,
+      limit: 4 * 1024,
       name: '[name].[hash:8].[ext]',
       outputPath: 'media'
     }
@@ -72,7 +81,7 @@ const rules = [
     test: /\.(woff2?|eot|ttf|otf)(\?.*)?$/,
     loader: 'url-loader',
     options: {
-      limit: 10000,
+      limit: 4 * 1024,
       name: '[name].[hash:8].[ext]',
       outputPath: 'font'
     }

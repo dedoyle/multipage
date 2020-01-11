@@ -28,6 +28,16 @@ module.exports = {
         'semi': [
             'error',
             'never'
+        ],
+        'keyword-spacing': [
+          'error',
+          {
+            'after': true
+          }
+        ],
+        'eqeqeq': [
+          'error',
+          'always'
         ]
     }
 }

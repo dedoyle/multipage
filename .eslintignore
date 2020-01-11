@@ -2,7 +2,4 @@
 /config/
 /dist/
 /*.js
-/test/
-/lib/
-/mock/
-/node_modules/
+/test/unit/coverage/
